@@ -114,7 +114,9 @@ systemctl restart ytvideo
 systemctl status  ytvideo
 ```
 
-nginx routes `/api/local/` and `/api/mpv/` to this service; the video SPA is served at `/`.
+nginx routes `/api/local/` and `/api/mpv/` to this service; the video SPA — built from the
+[`ytfrontend`](https://github.com/iversonianGremling/ytfrontend) repo (the platform's umbrella) — is
+served at `/`.
 
 ## License
 
