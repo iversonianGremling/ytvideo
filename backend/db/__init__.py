@@ -761,6 +761,15 @@ def delete_feed_filter(filter_id: int):
 
 # ── Feed Feedback ──────────────────────────────────────────────────────────
 
+def get_disliked_video_ids() -> set[str]:
+    """All video_ids the user has marked feedback=-1 (any category)."""
+    with get_db() as con:
+        rows = con.execute(
+            "SELECT DISTINCT video_id FROM feed_feedback WHERE feedback = -1"
+        ).fetchall()
+    return {r["video_id"] for r in rows}
+
+
 def get_feed_feedback(video_id: str, category: str = "") -> dict:
     with get_db() as con:
         if category:

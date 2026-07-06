@@ -35,6 +35,7 @@ class MpvStreamer:
                 "--no-config",
                 "--really-quiet",
                 f"--ytdl-format={ytdl_fmt}",
+                "--ytdl-raw-options=format-sort=lang",
                 "--o=-",
                 "--of=mp4",
                 "--ofopts=movflags=+frag_keyframe+empty_moov+default_base_moof",

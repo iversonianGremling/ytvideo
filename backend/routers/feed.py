@@ -18,6 +18,7 @@ from backend.db import (
     add_feed_filter,
     delete_feed_filter,
     get_feed_feedback,
+    get_disliked_video_ids,
     set_feed_feedback,
     delete_feed_feedback,
     ensure_channel_in_music_section,
@@ -62,6 +63,13 @@ async def feed(
         videos = result.get("videos") or result.get("items") or []
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"recommenderr unavailable: {exc}")
+
+    # Drop videos the user has explicitly disliked. recommenderr zeroes them as
+    # PPR *seeds*, but they can still surface as PPR *targets* of other seeds, so
+    # filter them out at serve time too.
+    disliked = get_disliked_video_ids()
+    if disliked:
+        videos = [v for v in videos if v.get("video_id") not in disliked]
 
     # Apply local feed_filters
     filters = get_feed_filters()
@@ -203,6 +211,15 @@ async def set_feedback(video_id: str, body: FeedFeedbackRequest):
     if body.feedback == -1 and body.dislike_reason == "its_music" and body.author_id:
         if ensure_channel_in_music_section(body.author_id):
             invalidate_subscription_feed_cache()
+    # "Not interesting" → fetch the video's recommended neighbours (once) so the
+    # recommenderr negative-centroid scorer can suppress the whole semantic
+    # cluster, not just this one video.  The crawl respects foreground
+    # backpressure on recommenderr, so this stays gentle on egress.
+    if body.feedback == -1 and body.dislike_reason == "not_interesting":
+        try:
+            await rec_client.enqueue_crawl(video_id)
+        except Exception:
+            pass  # suppression still works from already-cached edges; best-effort
     return {"ok": True}
 
 
